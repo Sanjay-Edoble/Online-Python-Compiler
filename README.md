@@ -31,18 +31,6 @@ GitHub Stars: https://github.com/edoble/online-python-compiler/stargazers
 
 ---
 
-## Project Structure  
-
-online-python-compiler/
-│── index.html           # Main HTML page
-│── README.md            # Project documentation
-│── LICENSE              # License file
-│── assets/              # Optional images/icons
-│── scripts/             # Optional JS helper files
-│── styles/              # Optional CSS files
-
----
-
 ## Getting Started  
 
 ### 1️⃣ Clone the repository  
