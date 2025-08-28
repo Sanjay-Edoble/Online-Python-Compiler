@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Author: Edoble -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Python Compiler</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+
+    <!-- CodeMirror Themes -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-lighter.min.css">
+
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-grid {
+            flex-grow: 1;
+            display: grid;
+            /* Mobile-first: stack editor and output vertically */
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 1fr;
+            /* Use fractional units for equal distribution */
+            gap: 0.5rem;
+            padding: 0.5rem;
+            overflow: hidden;
+        }
+
+        /* For tablets and larger screens, switch to side-by-side layout */
+        @media (min-width: 768px) {
+            .main-grid {
+                grid-template-columns: 60% 5px 1fr;
+                /* Editor | Resizer | Output */
+                grid-template-rows: 1fr;
+                /* Reset to a single row */
+            }
+        }
+
+        .header {
+            background-color: #1e1e1e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            min-height: 64px;
+            /* Use min-height to allow wrapping */
+            border-bottom: 1px solid #333333;
+            flex-wrap: wrap;
+            /* Allow items to wrap on small screens */
+            gap: 0.5rem;
+        }
+
+        .editor-container,
+        .output-container {
+            position: relative;
+            height: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* CodeMirror Styling */
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            flex-grow: 1;
+        }
+
+        .output-tabs {
+            display: flex;
+            border-bottom: 1px solid #333333;
+            padding: 0.5rem 1rem;
+            flex-shrink: 0;
+        }
+
+        .output-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.25rem 0.25rem 0 0;
+            font-weight: 500;
+        }
+
+        .output-tab.active {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #333333;
+            border-bottom: none;
+        }
+
+        #output {
+            flex-grow: 1;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            overflow-y: auto;
+        }
+
+        #output pre {
+            font-family: 'Fira Code', monospace;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .footer {
+            background-color: #1e1e1e;
+            color: #a0aec0;
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            border-top: 1px solid #333333;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        #resizer {
+            display: none;
+            /* Hidden on mobile */
+            background-color: #4a5568;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            #resizer {
+                display: block;
+                /* Visible on desktop */
+            }
+        }
+
+        #themeSelector {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border: 1px solid #4a5568;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+</head>
+<!-- Author: Edoble -->
+<body>
+    <div class="header">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-lg sm:text-xl font-bold text-white">Python Compiler</h1>
+        </div>
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <select id="themeSelector" class="text-sm">
+                <option value="material-darker">Material Darker</option>
+                <option value="dracula">Dracula</option>
+                <option value="monokai">Monokai</option>
+                <option value="eclipse">Eclipse (Light)</option>
+                <option value="material-lighter">Material Lighter</option>
+            </select>
+            <span class="text-white font-semibold text-sm sm:text-base">main.py</span>
+            <button id="runButton"
+                class="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600 text-white font-semibold rounded-full shadow-lg hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-sm sm:text-base">
+                <span id="buttonText">Run</span>
+                <div id="spinner" class="spinner hidden"></div>
+            </button>
+            <button id="clearButton"
+                class="flex items-center px-3 sm:px-4 py-2 bg-slate-700 text-slate-300 font-semibold rounded-full shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 transition-all text-sm sm:text-base">
+                Clear
+            </button>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="main-grid" id="main-grid">
+            <div class="editor-container" id="editor-wrapper">
+                <!-- CodeMirror will attach here -->
+            </div>
+            <div id="resizer"></div>
+            <div class="output-container">
+                <div class="output-tabs">
+                    <span class="output-tab active">Output</span>
+                </div>
+                <div id="output">
+                    <p class="text-slate-500">Initializing Python... This may take a moment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        Developed by <a href="https://edoble.in" target="_blank" rel="noopener noreferrer"
+            class="text-sky-400 hover:underline">Edoble 💙</a>
+    </footer>
+<!-- Author: Edoble -->
+    <script>
+        const outputDiv = document.getElementById('output');
+        const runButton = document.getElementById('runButton');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('spinner');
+        const clearButton = document.getElementById('clearButton');
+        const themeSelector = document.getElementById('themeSelector');
+        const loadedPackages = new Set();
+        const commonPackages = ['numpy', 'pandas', 'scipy', 'matplotlib', 'scikit-learn', 'requests'];
+        runButton.disabled = true;
+
+        // --- CodeMirror Setup ---
+        const editor = CodeMirror(document.getElementById('editor-wrapper'), {
+            value: 'print("Hello, Edoble")',
+            mode: 'python',
+            theme: 'material-darker', // Default theme
+            lineNumbers: true,
+            tabSize: 4,
+            indentUnit: 4,
+            lineWrapping: true,
+            autofocus: true,
+            extraKeys: {
+                "Ctrl-Enter": (cm) => runCode(),
+            }
+        });
+
+        // --- Theme Changer ---
+        themeSelector.addEventListener('change', (e) => {
+            const selectedTheme = e.target.value;
+            editor.setOption('theme', selectedTheme);
+        });
+
+        // --- Resizer Logic ---
+        const resizer = document.getElementById('resizer');
+        const mainGrid = document.getElementById('main-grid');
+
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                // Refresh CodeMirror to adjust to the new size
+                editor.refresh();
+            });
+        });
+
+        function handleMouseMove(e) {
+            if (!isResizing) return;
+            const containerRect = mainGrid.getBoundingClientRect();
+            const newEditorWidth = e.clientX - containerRect.left;
+            const editorWidthPercent = (newEditorWidth / containerRect.width) * 100;
+
+            // Constrain the resizing
+            if (editorWidthPercent > 20 && editorWidthPercent < 80) {
+                mainGrid.style.gridTemplateColumns = `${editorWidthPercent}% 5px 1fr`;
+            }
+        }
+
+
+        // --- output coloring ---
+        function add_output(text, stream) {
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            code.className = "language-python"; // This class is for Prism, but we can reuse it
+            pre.className = "rounded p-2 overflow-x-auto text-sm";
+
+            const safeText = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            if (stream === "stderr") {
+                // We'll just color the text red instead of full highlighting
+                pre.innerHTML = `<span class="text-red-300">${safeText}</span>`;
+                pre.classList.add("bg-red-900/40");
+            } else {
+                pre.textContent = text;
+                pre.classList.add("bg-slate-800/60", "text-slate-200");
+            }
+
+            outputDiv.appendChild(pre);
+        }
+        window.add_output = add_output;
+
+
+        async function initializePyodide() {
+            try {
+                const pyodide = await loadPyodide();
+                outputDiv.innerHTML = '<p class="text-green-400">Python is ready! You can now run your code.</p>';
+
+                await pyodide.runPythonAsync(`
+import sys
+class JSWriter:
+    def __init__(self, name): self.name = name
+    def write(self, text):
+        if text.strip():
+            from js import add_output
+            add_output(text, self.name)
+    def flush(self): pass
+sys.stdout = JSWriter("stdout")
+sys.stderr = JSWriter("stderr")
+        `);
+
+                runButton.disabled = false;
+                return pyodide;
+            } catch (error) {
+                outputDiv.innerHTML = `<p class="text-red-400">Error initializing Python: ${error.message}</p>`;
+                console.error("Pyodide initialization failed:", error);
+            }
+        }
+
+        let pyodide = null;
+        initializePyodide().then(instance => {
+            pyodide = instance;
+        });
+
+        const runCode = async () => {
+            const code = editor.getValue(); // Get code from CodeMirror
+            outputDiv.innerHTML = '';
+            buttonText.textContent = 'Running...';
+            spinner.classList.remove('hidden');
+            runButton.disabled = true;
+
+            try {
+                const imports = [...code.matchAll(/^\s*(?:import|from)\s+([a-zA-Z0-9_]+)/gm)].map(m => m[1]);
+                const packagesToLoad = imports.filter(pkg => commonPackages.includes(pkg) && !loadedPackages.has(pkg));
+
+                if (packagesToLoad.length > 0) {
+                    add_output(`Loading packages: ${packagesToLoad.join(', ')}...`, "stdout");
+                    await pyodide.loadPackage(packagesToLoad);
+                    packagesToLoad.forEach(pkg => loadedPackages.add(pkg));
+                    add_output("Packages loaded successfully.", "stdout");
+                }
+
+                await pyodide.runPythonAsync(code);
+
+            } catch (error) {
+                add_output(`${error}`, "stderr");
+            } finally {
+                buttonText.textContent = 'Run';
+                spinner.classList.add('hidden');
+                runButton.disabled = false;
+            }
+        };
+
+        const clearContent = () => {
+            editor.setValue(''); // Clear CodeMirror
+            outputDiv.innerHTML = '<p class="text-slate-500">Output will appear here...</p>';
+        };
+
+        runButton.addEventListener('click', runCode);
+        clearButton.addEventListener('click', clearContent);
+
+    </script>
+
+<!-- Author: Edoble --><!-- Author: Edoble -->
+// edoble-sanjay-guruganesh
+</body>
+
+</html>
