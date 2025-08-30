@@ -2,7 +2,7 @@
 
 A **web-based Python compiler** that allows you to write, run, and test Python code directly in the browser using **Pyodide** and **CodeMirror**.  
 
-Live Demo: [https://compiler.edoble.in ](https://compiler.edoble.in/Python.html) 
+Live Demo: [https://compiler.edoble.in/python ](https://compiler.edoble.in/Python.html) 
 
 License: MIT License – [see LICENSE  ](https://github.com/Sanjay-Edoble/Online-Python-Compiler/blob/main/LICENSE)
 
