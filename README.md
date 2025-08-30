@@ -4,7 +4,7 @@ A **web-based Python compiler** that allows you to write, run, and test Python c
 
 Live Demo: [https://compiler.edoble.in ](https://compiler.edoble.in/Python.html) 
 
-License: MIT License – see LICENSE  
+License: MIT License – [see LICENSE  ](https://github.com/Sanjay-Edoble/Online-Python-Compiler/blob/main/LICENSE)
 
 
 ---
